@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monitoreo de Servidores</title>
+</head>
+<body>
+    <h1>Estado de los Servidores</h1>
+    <table border="1">
+        <tr>
+            <th>Servidor</th>
+            <th>Estado</th>
+        </tr>
+        {% for server, status in statuses.items() %}
+        <tr>
+            <td>{{ server }}</td>
+            <td>{{ status }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
