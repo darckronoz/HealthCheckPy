@@ -1,21 +1,50 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Monitoreo de Servidores</title>
+    <title>Service Monitor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.3/socket.io.min.js"></script>
+    <style>
+        .box {
+            width: 200px;
+            height: 100px;
+            margin: 10px;
+            text-align: center;
+            line-height: 100px; /* Vertically center text */
+        }
+        .up { 
+            background-color: lightgreen; 
+        }
+        .down { 
+            background-color: lightcoral; 
+        }
+    </style>
 </head>
 <body>
-    <h1>Estado de los Servidores</h1>
-    <table border="1">
-        <tr>
-            <th>Servidor</th>
-            <th>Estado</th>
-        </tr>
-        {% for server, status in statuses.items() %}
-        <tr>
-            <td>{{ server }}</td>
-            <td>{{ status }}</td>
-        </tr>
+    <h1>Service Monitor</h1>
+    <div id="services">
+        {% for service in services %}
+            <div id="{{ service.name }}" class="box {{ service.status }}">
+                {{ service.name }}
+                <span class="status">{{ service.status }}</span>
+            </div>
         {% endfor %}
-    </table>
+    </div>
 </body>
+<script>
+    var socket = io();
+
+    socket.on("service_status", function(data) {
+        // Convertimos el JSON recibido a un objeto
+        var service = JSON.parse(data);
+
+        // Obtenemos el nombre y estado del servicio
+        var serviceElement = document.getElementById(service.name);
+        var status = service.status;
+
+        // Actualizamos el estado del servicio en la interfaz
+        serviceElement.classList.remove("up", "down");
+        serviceElement.classList.add(status);
+        serviceElement.querySelector(".status").textContent = status;
+    });
+</script>
 </html>
