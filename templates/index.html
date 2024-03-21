@@ -34,17 +34,28 @@
     var socket = io();
 
     socket.on("service_status", function(data) {
-        // Convertimos el JSON recibido a un objeto
         var service = JSON.parse(data);
 
-        // Obtenemos el nombre y estado del servicio
         var serviceElement = document.getElementById(service.name);
         var status = service.status;
 
-        // Actualizamos el estado del servicio en la interfaz
         serviceElement.classList.remove("up", "down");
         serviceElement.classList.add(status);
         serviceElement.querySelector(".status").textContent = status;
+    });
+
+    socket.on("new_server", function(data) {
+        var service = JSON.parse(data);
+
+        var div = document.createElement("div");
+        div.id = service.name;
+        div.classList.add("box", service.status);
+        div.innerHTML = `
+            <span class="math-inline">\{service\.name\}
+<span class\="status"\></span>{service.status}</span>
+        `;
+
+        document.getElementById("services").appendChild(div);
     });
 </script>
 </html>
