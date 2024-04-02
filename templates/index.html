@@ -1,61 +1,177 @@
 <!DOCTYPE html>
 <html>
-<head>
+<head> 
     <title>Service Monitor</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.3/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .box {
-            width: 200px;
-            height: 100px;
-            margin: 10px;
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #212121;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: #212121;
+            color: white;
             text-align: center;
-            line-height: 100px; /* Vertically center text */
+            padding: 5px;
         }
-        .up { 
-            background-color: lightgreen; 
+
+        main {
+            flex: 1;
+            padding: 20px;
         }
-        .down { 
-            background-color: lightcoral; 
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ebebeb;
+        }
+
+        #services {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+        }
+
+        .service {
+            border: 1px solid #ccc;
+            margin: 20px;
+            padding: 20px;
+            width: 400px;
+            text-align: center;
+        }
+
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .service-title {
+            font-weight: bold;
+        }
+
+        .indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .up {
+            background-color: green;
+        }
+
+        .down {
+            background-color: red;
+        }
+
+        .service-content {
+            margin-top: 20px;
         }
     </style>
 </head>
 <body>
-    <h1>Service Monitor</h1>
-    <div id="services">
-        {% for service in services %}
-            <div id="{{ service.name }}" class="box {{ service.status }}">
-                {{ service.name }}
-                <span class="status">{{ service.status }}</span>
-            </div>
-        {% endfor %}
-    </div>
+    <header>
+        <h1>Service Monitor</h1>
+    </header>
+    <main>
+        <div id="services">
+            {% for service in services %}
+            <div id="{{service.name}}" class="service">
+                <div class="service-header">
+                  <div class="service-title">{{service.url}}</div>
+                  <div class="indicator {{service.status}}"></div>
+                </div>
+                <div class="service-content">
+                    <canvas id="myChart{{service.name}}"></canvas>
+                </div>
+              </div>
+            {% endfor %}
+        </div>
+        
+    </main>
 </body>
 <script>
-    var socket = io();
+var socket = io();
 
-    socket.on("service_status", function(data) {
-        var service = JSON.parse(data);
+// Objeto para almacenar referencias a las gráficas
+var charts = {};
 
-        var serviceElement = document.getElementById(service.name);
-        var status = service.status;
+socket.on("service_status", function(data) {
+  var service = JSON.parse(data);
 
-        serviceElement.classList.remove("up", "down");
-        serviceElement.classList.add(status);
-        serviceElement.querySelector(".status").textContent = status;
-    });
+  var parent = document.getElementById(service.name);
+  var serviceElement = parent.querySelector(".indicator");
+  var status = service.status;
 
-    socket.on("new_server", function(data) {
-        var service = JSON.parse(data);
+  serviceElement.classList.remove("up", "down");
+  serviceElement.classList.add(status);
 
-        var div = document.createElement("div");
-        div.id = service.name;
-        div.classList.add("box", service.status);
-        div.innerHTML = `
-            <span class="math-inline">\{service\.name\}
-<span class\="status"\></span>{service.status}</span>
-        `;
+  // Actualizar datos y re-renderizar la gráfica
+  if (charts.hasOwnProperty(service.name)) {
+    var chart = charts[service.name];
+    chart.data.datasets[0].data = service.latency;
+    chart.update();
+  }
+});
 
-        document.getElementById("services").appendChild(div);
-    });
+socket.on("new_server", function(data) {
+  var service = JSON.parse(data);
+
+  var parent = document.getElementById(service.name);
+  var serviceElement = parent.querySelector(".indicator");
+  var status = service.status;
+
+  serviceElement.classList.remove("up", "down");
+  serviceElement.classList.add(status);
+
+  // Datos de ejemplo
+  var valoresY = service.latency;
+  var etiquetasX = ["Tiempo 1", "Tiempo 2", "Tiempo 3", "Tiempo 4", "Tiempo 5"];
+
+  // Crear el contexto de la gráfica
+  var ctx = document.getElementById('myChart'+service.name).getContext('2d');
+
+  // Crear la gráfica y almacenar la referencia
+  var myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: etiquetasX,
+      datasets: [{
+        label: 'Valores',
+        data: valoresY,
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  charts[service.name] = myChart;
+});
 </script>
 </html>
