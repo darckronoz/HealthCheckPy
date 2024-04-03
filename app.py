@@ -1,5 +1,5 @@
 import requests
-from flask import Flask, render_template, jsonify
+from flask import request, Flask, render_template, jsonify
 from flask_socketio import SocketIO, emit
 import threading
 import time
@@ -103,15 +103,17 @@ def background_update():
 
 @app.route("/monitor", methods=["POST"])
 def update_server_info():
-    data = requests.get_json()
-    puerto_disponible = data["puerto"]
+    data = request.json
+    puerto_disponible = data["port"]
     url = data["ip"]+":"+puerto_disponible+"/status"
     name = "service"+puerto_disponible
+    log(f"trying to add server port: {puerto_disponible} ip: {url}")
     status = "down"
     latency = Pila(5)
     servicionew = Servicio(name, url, status, latency)
     services.append(servicionew)
     socketio.emit("new_server", json.dumps(servicionew.to_dict()), namespace="/")
+    log(f"server ip: {url} added!")
     return jsonify({"success": True})
 
 def init_temp(puerto, ip):
@@ -139,9 +141,9 @@ def index():
 
 @socketio.on('connect', namespace="/")
 def on_connect():
-    init_temp(3400, 'http://localhost')
-    init_temp(3500, 'http://localhost')
-    init_temp(3600, 'http://localhost')
+    #init_temp(3400, 'http://localhost')
+    #init_temp(3500, 'http://localhost')
+    #init_temp(3600, 'http://localhost')
     print("Cliente conectado")
 
 @socketio.on('disconnect', namespace="/")
